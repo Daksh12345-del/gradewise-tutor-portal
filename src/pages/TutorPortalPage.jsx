@@ -188,7 +188,7 @@ export default function TutorPortalPage({ user }) {
                     <strong>{b.student_name}</strong> — {b.subject}
                     <div className="portal-dim">{formatDateTime(b.scheduled_start)} · {b.status}</div>
                   </div>
-                  {b.meet_link && <a href={b.meet_link} target="_blank" rel="noopener noreferrer" className="portal-btn-primary">Join Meet →</a>}
+                  {b.meet_link && <a href={b.meet_link} target="_blank" rel="noopener noreferrer" className="portal-btn-primary">Join Video Call →</a>}
                 </div>
               ))}
               {bookings.length === 0 && <div className="portal-dim">No bookings yet.</div>}
