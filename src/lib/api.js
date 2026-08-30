@@ -39,3 +39,10 @@ export async function addTutorSlot(teacherId, payload) {
   requireBackendUrl()
   return postJson(`${PYTHON_BACKEND_URL}/api/tuition/tutors/${teacherId}/slots`, payload)
 }
+
+/** GET /api/tuition/bookings/{id}/join?user_id= — mints a fresh, time-boxed
+ * join link right when the tutor clicks Join (not fetched/stored earlier). */
+export async function fetchTuitionJoinLink(bookingId, userId) {
+  requireBackendUrl()
+  return getJson(`${PYTHON_BACKEND_URL}/api/tuition/bookings/${bookingId}/join?user_id=${encodeURIComponent(userId)}`)
+}

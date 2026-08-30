@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { applyAsTutor, fetchTutorDashboard, addTutorSlot } from '../lib/api'
+import { applyAsTutor, fetchTutorDashboard, addTutorSlot, fetchTuitionJoinLink } from '../lib/api'
 
 function ApplyForm({ user, onApplied }) {
   const [subjects, setSubjects] = useState('')
@@ -118,6 +118,37 @@ function formatDateTime(iso) {
   return d.toLocaleString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
+// Fetches a fresh, time-boxed, moderator-flagged join link right when the
+// tutor clicks Join — never pre-fetched, so it always reflects whether
+// the session window is currently open (see
+// GET /api/tuition/bookings/{id}/join on the backend).
+function JoinCallButton({ bookingId, user }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function join() {
+    setError('')
+    setLoading(true)
+    try {
+      const { join_url } = await fetchTuitionJoinLink(bookingId, user.id)
+      window.open(join_url, '_blank', 'noopener,noreferrer')
+    } catch (e) {
+      setError(e.message || 'Could not open the video call')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div>
+      <button className="portal-btn-primary" onClick={join} disabled={loading}>
+        {loading ? 'Opening…' : 'Join Video Call →'}
+      </button>
+      {error && <div className="portal-error" style={{ marginTop: 6 }}>{error}</div>}
+    </div>
+  )
+}
+
 const STATUS_COLORS = { approved: '#10b981', rejected: '#ef4444', pending: '#f59e0b' }
 
 export default function TutorPortalPage({ user }) {
@@ -188,7 +219,7 @@ export default function TutorPortalPage({ user }) {
                     <strong>{b.student_name}</strong> — {b.subject}
                     <div className="portal-dim">{formatDateTime(b.scheduled_start)} · {b.status}</div>
                   </div>
-                  {b.meet_link && <a href={b.meet_link} target="_blank" rel="noopener noreferrer" className="portal-btn-primary">Join Video Call →</a>}
+                  {b.status === 'confirmed' && <JoinCallButton bookingId={b.id} user={user} />}
                 </div>
               ))}
               {bookings.length === 0 && <div className="portal-dim">No bookings yet.</div>}
