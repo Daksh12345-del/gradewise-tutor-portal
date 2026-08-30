@@ -39,7 +39,7 @@ function ApplyForm({ user, onApplied }) {
   return (
     <form onSubmit={submit} className="portal-card" style={{ maxWidth: 520, margin: '0 auto' }}>
       <h2>Apply to Tutor</h2>
-      <p className="portal-dim">A GradeWise admin reviews every application before your profile goes live and students can book you.</p>
+      <p className="portal-dim">A GradeWallah admin reviews every application before your profile goes live and students can book you.</p>
 
       <label className="portal-label">Subjects (comma separated)</label>
       <input className="portal-input" value={subjects} onChange={e => setSubjects(e.target.value)} placeholder="e.g. Calculus, Data Structures" />
@@ -159,7 +159,7 @@ export default function TutorPortalPage({ user }) {
         <div className="portal-card">Your application is awaiting admin review. You'll be able to open time slots once approved — check back soon.</div>
       )}
       {profile.approval_status === 'rejected' && (
-        <div className="portal-card">Your application wasn't approved this time. Contact the GradeWise admin if you'd like to know more.</div>
+        <div className="portal-card">Your application wasn't approved this time. Contact the GradeWallah admin if you'd like to know more.</div>
       )}
 
       {profile.approval_status === 'approved' && (

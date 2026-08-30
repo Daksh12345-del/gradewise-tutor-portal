@@ -13,7 +13,7 @@ import './styles/portal.css'
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
 if (!CLERK_PUBLISHABLE_KEY) {
-  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY — add it to your .env file (see .env.example). Use the SAME key as the main GradeWise site.')
+  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY — add it to your .env file (see .env.example). Use the SAME key as the main GradeWallah site.')
 }
 
 createRoot(document.getElementById('root')).render(
