@@ -202,8 +202,13 @@ export default function TutorPortalPage({ user }) {
             <div className="portal-list">
               {slots.map(s => (
                 <div key={s.id} className="portal-list-row">
-                  <span>{formatDateTime(s.scheduled_start)}</span>
-                  <span style={{ color: s.is_booked ? '#10b981' : 'var(--portal-dim)' }}>{s.is_booked ? 'Booked' : 'Open'}</span>
+                  <span>📅 {formatDateTime(s.scheduled_start)}</span>
+                  <span className="portal-badge" style={{
+                    color: s.is_booked ? '#10b981' : '#8b5cf6',
+                    background: (s.is_booked ? '#10b981' : '#8b5cf6') + '1c',
+                  }}>
+                    {s.is_booked ? '✓ Booked' : 'Open'}
+                  </span>
                 </div>
               ))}
               {slots.length === 0 && <div className="portal-dim">No slots yet — add one above.</div>}
@@ -215,11 +220,22 @@ export default function TutorPortalPage({ user }) {
             <div className="portal-list">
               {bookings.map(b => (
                 <div key={b.id} className="portal-booking-row">
-                  <div>
-                    <strong>{b.student_name}</strong> — {b.subject}
-                    <div className="portal-dim">{formatDateTime(b.scheduled_start)} · {b.status}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div className="portal-avatar">{(b.student_name || '?').slice(0, 2).toUpperCase()}</div>
+                    <div>
+                      <strong>{b.student_name}</strong> — {b.subject}
+                      <div className="portal-dim">📅 {formatDateTime(b.scheduled_start)}</div>
+                    </div>
                   </div>
-                  {b.status === 'confirmed' && <JoinCallButton bookingId={b.id} user={user} />}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span className="portal-badge" style={{
+                      color: b.status === 'confirmed' ? '#10b981' : '#f59e0b',
+                      background: (b.status === 'confirmed' ? '#10b981' : '#f59e0b') + '1c',
+                    }}>
+                      {b.status === 'confirmed' ? '✓ Confirmed' : 'Pending'}
+                    </span>
+                    {b.status === 'confirmed' && <JoinCallButton bookingId={b.id} user={user} />}
+                  </div>
                 </div>
               ))}
               {bookings.length === 0 && <div className="portal-dim">No bookings yet.</div>}

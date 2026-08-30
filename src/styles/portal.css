@@ -85,9 +85,15 @@ body {
 .portal-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 .portal-list-row, .portal-booking-row {
   display: flex; justify-content: space-between; align-items: center; gap: 10px;
-  font-size: 0.85rem; padding: 8px 0; border-bottom: 1px solid var(--portal-border);
+  font-size: 0.85rem; padding: 10px 12px; border-radius: 8px;
+  background: color-mix(in srgb, var(--portal-accent) 6%, transparent);
 }
-.portal-list-row:last-child, .portal-booking-row:last-child { border-bottom: none; }
+.portal-avatar {
+  width: 32px; height: 32px; border-radius: 999px; flex-shrink: 0;
+  background: color-mix(in srgb, var(--portal-accent) 18%, transparent);
+  color: var(--portal-accent); font-weight: 700; font-size: 0.7rem;
+  display: flex; align-items: center; justify-content: center;
+}
 
 @media (max-width: 520px) {
   .portal-row-2 { grid-template-columns: 1fr; }
