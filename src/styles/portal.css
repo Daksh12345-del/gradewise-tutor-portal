@@ -86,7 +86,14 @@ body {
 .portal-list-row, .portal-booking-row {
   display: flex; justify-content: space-between; align-items: center; gap: 10px;
   font-size: 0.85rem; padding: 10px 12px; border-radius: 8px;
-  background: color-mix(in srgb, var(--portal-accent) 6%, transparent);
+  color: var(--portal-text);
+  /* Solid fallback first for browsers without color-mix() support — if
+     color-mix() IS supported, the second (more specific) declaration below
+     wins per normal CSS cascade; if it's not supported, that line is
+     simply invalid and ignored, leaving this fallback in place instead of
+     silently falling back to no background at all. */
+  background: var(--portal-card);
+  background: color-mix(in srgb, var(--portal-accent) 6%, var(--portal-card));
 }
 .portal-avatar {
   width: 32px; height: 32px; border-radius: 999px; flex-shrink: 0;
