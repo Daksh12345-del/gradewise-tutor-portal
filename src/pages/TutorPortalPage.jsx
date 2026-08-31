@@ -1,11 +1,23 @@
 import { useState, useEffect } from 'react'
 import { applyAsTutor, fetchTutorDashboard, addTutorSlot, fetchTuitionJoinLink } from '../lib/api'
 
+const EXPERIENCE_LEVELS = [
+  'Currently studying (not yet graduated)',
+  'Fresher / recently graduated',
+  '1-2 years',
+  '3-5 years',
+  '5-10 years',
+  '10+ years',
+]
+
 function ApplyForm({ user, onApplied }) {
   const [subjects, setSubjects] = useState('')
   const [bio, setBio] = useState('')
   const [qualifications, setQualifications] = useState('')
-  const [experienceYears, setExperienceYears] = useState('')
+  const [college, setCollege] = useState('')
+  const [experienceLevel, setExperienceLevel] = useState(EXPERIENCE_LEVELS[0])
+  const [aadharNumber, setAadharNumber] = useState('')
+  const [panNumber, setPanNumber] = useState('')
   const [hourlyRate, setHourlyRate] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -15,6 +27,11 @@ function ApplyForm({ user, onApplied }) {
     setError('')
     const subjectList = subjects.split(',').map(s => s.trim()).filter(Boolean)
     if (subjectList.length === 0) return setError('Add at least one subject (comma separated).')
+    if (!college.trim()) return setError('Enter your college / institution.')
+    const aadharDigits = aadharNumber.replace(/\s/g, '')
+    if (!/^\d{12}$/.test(aadharDigits)) return setError('Aadhar number must be exactly 12 digits.')
+    const pan = panNumber.trim().toUpperCase()
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) return setError('PAN number format looks wrong — should be like ABCDE1234F.')
     if (!hourlyRate || Number(hourlyRate) <= 0) return setError('Enter a valid hourly rate.')
     setSubmitting(true)
     try {
@@ -22,10 +39,13 @@ function ApplyForm({ user, onApplied }) {
         user_id: user.id,
         name: user.name,
         email: user.email,
+        aadhar_number: aadharDigits,
+        pan_number: pan,
+        college: college.trim(),
         subjects: subjectList,
         bio,
         qualifications,
-        experience_years: Number(experienceYears) || 0,
+        experience_level: experienceLevel,
         hourly_rate: Number(hourlyRate),
       })
       onApplied()
@@ -39,22 +59,50 @@ function ApplyForm({ user, onApplied }) {
   return (
     <form onSubmit={submit} className="portal-card" style={{ maxWidth: 520, margin: '0 auto' }}>
       <h2>Apply to Tutor</h2>
-      <p className="portal-dim">A GradeWallah admin reviews every application before your profile goes live and students can book you.</p>
+      <p className="portal-dim">A GradeWallah admin reviews every application — including a manual identity check — before your profile goes live and students can book you.</p>
 
       <label className="portal-label">Subjects (comma separated)</label>
       <input className="portal-input" value={subjects} onChange={e => setSubjects(e.target.value)} placeholder="e.g. Calculus, Data Structures" />
 
-      <label className="portal-label">Short bio</label>
-      <textarea className="portal-input" rows={3} value={bio} onChange={e => setBio(e.target.value)} placeholder="What do you teach, and how?" />
+      <label className="portal-label">College / Institution (where you studied or currently study)</label>
+      <input className="portal-input" value={college} onChange={e => setCollege(e.target.value)} placeholder="e.g. IIT Delhi, or XYZ Engineering College" />
 
       <div className="portal-row-2">
         <div>
           <label className="portal-label">Qualifications</label>
-          <input className="portal-input" value={qualifications} onChange={e => setQualifications(e.target.value)} placeholder="e.g. B.Tech CSE, 4th year" />
+          <input className="portal-input" value={qualifications} onChange={e => setQualifications(e.target.value)} placeholder="e.g. B.Tech CSE" />
         </div>
         <div>
-          <label className="portal-label">Years of experience</label>
-          <input className="portal-input" type="number" min="0" value={experienceYears} onChange={e => setExperienceYears(e.target.value)} />
+          <label className="portal-label">Experience</label>
+          <select className="portal-input" value={experienceLevel} onChange={e => setExperienceLevel(e.target.value)}>
+            {EXPERIENCE_LEVELS.map(lvl => <option key={lvl} value={lvl}>{lvl}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <label className="portal-label">Short bio</label>
+      <textarea className="portal-input" rows={3} value={bio} onChange={e => setBio(e.target.value)} placeholder="What do you teach, and how?" />
+
+      <div className="portal-verify-note">
+        🔒 The two fields below are for identity verification only — used solely by the GradeWallah admin to confirm you're a real person before approving your application. They're never shown to students or displayed anywhere on your public profile.
+      </div>
+
+      <div className="portal-row-2">
+        <div>
+          <label className="portal-label">Aadhar number</label>
+          <input
+            className="portal-input" inputMode="numeric" maxLength={14}
+            value={aadharNumber} onChange={e => setAadharNumber(e.target.value)}
+            placeholder="12-digit number"
+          />
+        </div>
+        <div>
+          <label className="portal-label">PAN number</label>
+          <input
+            className="portal-input" maxLength={10} style={{ textTransform: 'uppercase' }}
+            value={panNumber} onChange={e => setPanNumber(e.target.value.toUpperCase())}
+            placeholder="e.g. ABCDE1234F"
+          />
         </div>
       </div>
 
