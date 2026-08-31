@@ -5,6 +5,7 @@
   --portal-text: #f1f1f5;
   --portal-dim: #9a9ab0;
   --portal-accent: #8b5cf6;
+  --portal-input-bg: #0a0a10;
 }
 
 .portal-root.light {
@@ -14,6 +15,7 @@
   --portal-text: #16161f;
   --portal-dim: #6b6b80;
   --portal-accent: #7c3aed;
+  --portal-input-bg: #f0f0f5;
 }
 
 * { box-sizing: border-box; }
@@ -65,8 +67,12 @@ body {
 .portal-label { display: block; font-size: 0.8rem; color: var(--portal-dim); margin: 10px 0 4px; }
 .portal-input {
   width: 100%; padding: 10px 12px; border-radius: 8px;
-  border: 1px solid var(--portal-border); background: #0f0f16; color: var(--portal-text);
+  border: 1px solid var(--portal-border); background: var(--portal-input-bg); color: var(--portal-text);
   font: inherit; font-size: 0.9rem;
+  color-scheme: dark; /* matches default (dark) theme so native date/time picker icons render light-on-dark, not invisible */
+}
+.portal-root.light .portal-input {
+  color-scheme: light; /* switches native picker icons to dark-on-light to match */
 }
 .portal-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
