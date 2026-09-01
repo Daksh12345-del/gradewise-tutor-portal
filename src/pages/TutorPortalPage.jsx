@@ -416,6 +416,25 @@ function JoinCallButton({ bookingId, user }) {
 
 const STATUS_COLORS = { approved: '#10b981', rejected: '#ef4444', pending: '#f59e0b' }
 
+// Small KPI pill for the stats row.
+function StatCard({ icon, num, label, tone }) {
+  return (
+    <div className="portal-stat-card">
+      <span className={`portal-stat-icon tone-${tone}`}>{icon}</span>
+      <span className={`portal-stat-num tone-${tone}`}>{num}</span>
+      <span className="portal-stat-label">{label}</span>
+    </div>
+  )
+}
+
+// Splits an ISO datetime into day-month so the slot list can render a
+// small calendar tile (e.g. "14 / Sep").
+function slotDateParts(iso) {
+  const d = new Date(iso)
+  if (isNaN(d)) return { day: '–', month: '—' }
+  return { day: String(d.getDate()), month: d.toLocaleString('en-IN', { month: 'short' }) }
+}
+
 export default function TutorPortalPage({ user }) {
   const [data, setData] = useState(null)
   const [status, setStatus] = useState('loading')
@@ -439,73 +458,113 @@ export default function TutorPortalPage({ user }) {
 
   const { profile, slots = [], bookings = [] } = data
 
+  const openSlots = slots.filter(s => !s.is_booked).length
+  const bookedSlots = slots.filter(s => s.is_booked).length
+  const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length
+  const statusMeta = profile.approval_status === 'approved'
+    ? { label: '✓ Approved', tone: 'approved' }
+    : profile.approval_status === 'rejected'
+      ? { label: 'Not approved', tone: 'rejected' }
+      : { label: '⏳ Pending review', tone: 'pending' }
+
   return (
     <div className="portal-body">
-      <div className="portal-profile-header">
-        <div>
-          <h1 style={{ margin: 0 }}>{profile.name}</h1>
-          <div className="portal-dim">{(profile.subjects || []).join(', ')} · ₹{profile.hourly_rate}/hr</div>
+      {/* Full-width profile banner */}
+      <div className="portal-profile-banner">
+        <div className="portal-profile-main">
+          <div className="portal-avatar-lg">{(profile.name || '?').slice(0, 2).toUpperCase()}</div>
+          <div style={{ minWidth: 0 }}>
+            <h1>{profile.name}</h1>
+            <div className="portal-dim">{(profile.subjects || []).join(' · ') || 'Tutor'} · ₹{profile.hourly_rate}/hr</div>
+          </div>
         </div>
-        <span className="portal-badge" style={{ color: STATUS_COLORS[profile.approval_status], background: STATUS_COLORS[profile.approval_status] + '22' }}>
-          {profile.approval_status === 'approved' ? '✓ Approved' : profile.approval_status === 'rejected' ? 'Not approved' : 'Pending review'}
+        <span className="portal-badge portal-badge-lg" style={{ color: STATUS_COLORS[profile.approval_status], background: STATUS_COLORS[profile.approval_status] + '22' }}>
+          {statusMeta.label}
         </span>
       </div>
 
       {profile.approval_status === 'pending' && (
-        <div className="portal-card">Your application is awaiting admin review. You'll be able to open time slots once approved — check back soon.</div>
+        <div className="portal-card">
+          <h3 style={{ marginTop: 0 }}>Waiting on admin review</h3>
+          <p className="portal-dim" style={{ margin: 0 }}>Your application is being reviewed. You'll be able to open time slots once it's approved — check back soon.</p>
+        </div>
       )}
       {profile.approval_status === 'rejected' && (
-        <div className="portal-card">Your application wasn't approved this time. Contact the GradeWallah admin if you'd like to know more.</div>
+        <div className="portal-card">
+          <h3 style={{ marginTop: 0 }}>Application not approved</h3>
+          <p className="portal-dim" style={{ margin: 0 }}>Your application wasn't approved this time. Contact the GradeWallah admin if you'd like to know more.</p>
+        </div>
       )}
 
       {profile.approval_status === 'approved' && (
         <>
-          <section className="portal-card">
-            <h3>Open a new slot</h3>
-            <AddSlotForm teacherId={profile.id} user={user} onAdded={load} />
-            <h4>Your upcoming slots ({slots.filter(s => !s.is_booked).length} open)</h4>
-            <div className="portal-list">
-              {slots.map(s => (
-                <div key={s.id} className="portal-list-row">
-                  <span>📅 {formatDateTime(s.scheduled_start)}</span>
-                  <span className="portal-badge" style={{
-                    color: s.is_booked ? '#10b981' : '#8b5cf6',
-                    background: (s.is_booked ? '#10b981' : '#8b5cf6') + '1c',
-                  }}>
-                    {s.is_booked ? '✓ Booked' : 'Open'}
-                  </span>
-                </div>
-              ))}
-              {slots.length === 0 && <div className="portal-dim">No slots yet — add one above.</div>}
-            </div>
-          </section>
+          {/* KPI stats row */}
+          <div className="portal-stats">
+            <StatCard icon="🗓️" num={openSlots} label="Open slots" tone="accent" />
+            <StatCard icon="✅" num={bookedSlots} label="Booked" tone="success" />
+            <StatCard icon="🎥" num={confirmedBookings} label="Confirmed" tone="info" />
+            <StatCard icon="💰" num={`₹${profile.hourly_rate}`} label="Hourly rate" tone="warn" />
+          </div>
 
-          <section className="portal-card">
-            <h3>Bookings ({bookings.length})</h3>
-            <div className="portal-list">
-              {bookings.map(b => (
-                <div key={b.id} className="portal-booking-row">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div className="portal-avatar">{(b.student_name || '?').slice(0, 2).toUpperCase()}</div>
-                    <div>
-                      <strong>{b.student_name}</strong> — {b.subject}
-                      <div className="portal-dim">📅 {formatDateTime(b.scheduled_start)}</div>
+          <div className="portal-grid">
+            {/* Slots */}
+            <section className="portal-card">
+              <h3 className="portal-card-title">Open a new slot</h3>
+              <AddSlotForm teacherId={profile.id} user={user} onAdded={load} />
+
+              <h4 style={{ margin: '20px 0 10px' }}>Upcoming slots ({openSlots} open)</h4>
+              <div className="portal-list">
+                {slots.map(s => {
+                  const parts = slotDateParts(s.scheduled_start)
+                  return (
+                    <div key={s.id} className="portal-slot">
+                      <div className="portal-slot-left">
+                        <div className="portal-slot-date">
+                          <b>{parts.day}</b><span>{parts.month}</span>
+                        </div>
+                        <span style={{ fontWeight: 600 }}>{formatDateTime(s.scheduled_start)}</span>
+                      </div>
+                      <span className="portal-badge" style={{
+                        color: s.is_booked ? '#10b981' : '#7c3aed',
+                        background: (s.is_booked ? '#10b981' : '#7c3aed') + '1c',
+                      }}>
+                        {s.is_booked ? '✓ Booked' : 'Open'}
+                      </span>
+                    </div>
+                  )
+                })}
+                {slots.length === 0 && <div className="portal-dim">No slots yet — add one above.</div>}
+              </div>
+            </section>
+
+            {/* Bookings */}
+            <section className="portal-card">
+              <h3 className="portal-card-title">Bookings <span className="portal-badge" style={{ color: '#3b82f6', background: '#3b82f61c' }}>{bookings.length}</span></h3>
+              <div className="portal-list">
+                {bookings.map(b => (
+                  <div key={b.id} className="portal-booking">
+                    <div className="portal-booking-left">
+                      <div className="portal-avatar">{(b.student_name || '?').slice(0, 2).toUpperCase()}</div>
+                      <div className="portal-booking-meta">
+                        <strong>{b.student_name}</strong>
+                        <span>{b.subject} · {formatDateTime(b.scheduled_start)}</span>
+                      </div>
+                    </div>
+                    <div className="portal-booking-actions">
+                      <span className="portal-badge" style={{
+                        color: b.status === 'confirmed' ? '#10b981' : '#f59e0b',
+                        background: (b.status === 'confirmed' ? '#10b981' : '#f59e0b') + '1c',
+                      }}>
+                        {b.status === 'confirmed' ? '✓ Confirmed' : 'Pending'}
+                      </span>
+                      {b.status === 'confirmed' && <JoinCallButton bookingId={b.id} user={user} />}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span className="portal-badge" style={{
-                      color: b.status === 'confirmed' ? '#10b981' : '#f59e0b',
-                      background: (b.status === 'confirmed' ? '#10b981' : '#f59e0b') + '1c',
-                    }}>
-                      {b.status === 'confirmed' ? '✓ Confirmed' : 'Pending'}
-                    </span>
-                    {b.status === 'confirmed' && <JoinCallButton bookingId={b.id} user={user} />}
-                  </div>
-                </div>
-              ))}
-              {bookings.length === 0 && <div className="portal-dim">No bookings yet.</div>}
-            </div>
-          </section>
+                ))}
+                {bookings.length === 0 && <div className="portal-dim">No bookings yet.</div>}
+              </div>
+            </section>
+          </div>
         </>
       )}
     </div>
