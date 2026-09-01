@@ -45,7 +45,7 @@ const WIZARD_STEPS = [
   { key: 'about',     label: 'About You',       icon: '👋', desc: 'Tell students what you teach and your background.' },
   { key: 'background', label: 'Your Background', icon: '🎓', desc: 'Where you study or teach, and a short bio.' },
   { key: 'identity',  label: 'Verify Identity',  icon: '🔒', desc: 'Upload documents so we can confirm you\'re real.' },
-  { key: 'pricing',   label: 'Set Your Rate',    icon: '💰', desc: 'How much do you charge per hour?' },
+  { key: 'pricing',   label: 'Set Your Amount',  icon: '💰', desc: 'How much do you charge per hour?' },
 ]
 
 function ApplyForm({ user, onApplied }) {
@@ -281,7 +281,7 @@ function ApplyForm({ user, onApplied }) {
             {step === 3 && (
               <div className="wizard-form-card">
                 <div className="wizard-form-icon">💰</div>
-                <h2>Set your hourly rate</h2>
+                <h2>Set your amount</h2>
                 <p className="portal-dim">How much would you like to charge per hour? You can change this later.</p>
 
                 <div className="wizard-rate-box">
