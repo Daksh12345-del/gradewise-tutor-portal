@@ -4,7 +4,17 @@ import { useAuthUser } from './lib/useAuthUser'
 import TutorPortalPage from './pages/TutorPortalPage'
 
 export default function App() {
-  const [isLight, setIsLight] = useState(false)
+  // Default to light mode for new visitors; once a user picks a theme it's
+  // remembered in localStorage so their choice persists across visits.
+  const [isLight, setIsLight] = useState(() => localStorage.getItem('portal-theme') !== 'dark')
+
+  function toggleTheme() {
+    setIsLight(prev => {
+      const next = !prev
+      localStorage.setItem('portal-theme', next ? 'light' : 'dark')
+      return next
+    })
+  }
 
   return (
     <div className={`portal-root ${isLight ? 'light' : ''}`}>
@@ -16,7 +26,7 @@ export default function App() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             className="portal-theme-toggle"
-            onClick={() => setIsLight(v => !v)}
+            onClick={toggleTheme}
             aria-label="Toggle light/dark mode"
             title="Toggle light/dark mode"
           >
