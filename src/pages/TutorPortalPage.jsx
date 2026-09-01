@@ -9,7 +9,8 @@ const EXPERIENCE_LEVELS = [
   '5-10 years',
   '10+ years',
 ]
-const YEARS_OF_STUDY = ['1st year', '2nd year', '3rd year', '4th year', '5th year']
+const YEARS_OF_STUDY = ['1st year', '2nd year', '3rd year', '4th year']
+const YEARS_OF_STUDY_FOR_STUDYING = ['3rd year', '4th year']
 
 // The "college" field means something different depending on where someone
 // is in their career — asking a working tutor "which college do you study
@@ -65,7 +66,10 @@ function ApplyForm({ user, onApplied }) {
     setError('')
     const subjectList = subjects.split(',').map(s => s.trim()).filter(Boolean)
     if (subjectList.length === 0) return setError('Add at least one subject (comma separated).')
+    if (!qualifications.trim()) return setError('Enter your qualifications.')
+    if (isStudying && !['3rd year', '4th year'].includes(yearOfStudy)) return setError('Currently studying tutors must be at least in their 3rd year.')
     if (!college.trim()) return setError(`Enter your ${college_.label.toLowerCase()}.`)
+    if (!bio.trim()) return setError('Enter a short bio.')
     const aadharDigits = aadharNumber.replace(/\s/g, '')
     if (!/^\d{12}$/.test(aadharDigits)) return setError('Aadhar number must be exactly 12 digits.')
     const pan = panNumber.trim().toUpperCase()
@@ -131,9 +135,9 @@ function ApplyForm({ user, onApplied }) {
 
       {isStudying && (
         <>
-          <label className="portal-label">Which year are you in?</label>
+          <label className="portal-label">Which year are you in? (must be at least 3rd year)</label>
           <select className="portal-input" value={yearOfStudy} onChange={e => setYearOfStudy(e.target.value)}>
-            {YEARS_OF_STUDY.map(y => <option key={y} value={y}>{y}</option>)}
+            {YEARS_OF_STUDY_FOR_STUDYING.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </>
       )}
