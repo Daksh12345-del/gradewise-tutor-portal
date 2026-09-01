@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { applyAsTutor, fetchTutorDashboard, addTutorSlot, fetchTuitionJoinLink } from '../lib/api'
+import { applyAsTutor, fetchTutorDashboard, addTutorSlot, fetchTuitionJoinLink, uploadTeacherDocument } from '../lib/api'
 
 const EXPERIENCE_LEVELS = [
   'Currently studying (not yet graduated)',
@@ -9,6 +9,36 @@ const EXPERIENCE_LEVELS = [
   '5-10 years',
   '10+ years',
 ]
+const YEARS_OF_STUDY = ['1st year', '2nd year', '3rd year', '4th year', '5th year']
+
+// The "college" field means something different depending on where someone
+// is in their career — asking a working tutor "which college do you study
+// at" (or a student "which college do you teach at") reads as a mistake,
+// so both the label and the kind of proof requested adapt to what was
+// picked above it.
+function collegeContext(experienceLevel) {
+  if (experienceLevel === 'Currently studying (not yet graduated)') {
+    return { label: 'College / institute you study at', proofLabel: 'Proof of enrollment (student ID card or admission letter)' }
+  }
+  if (experienceLevel === 'Fresher / recently graduated') {
+    return { label: 'College you graduated from', proofLabel: 'Proof of graduation (degree certificate, marksheet, or college ID)' }
+  }
+  return { label: 'College / institute you teach (or taught) at', proofLabel: 'Proof of teaching (employment ID, offer letter, or similar)' }
+}
+
+function FileField({ label, file, onChange, error }) {
+  return (
+    <div>
+      <label className="portal-label">{label}</label>
+      <input
+        className="portal-input" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"
+        onChange={e => onChange(e.target.files?.[0] || null)}
+      />
+      {file && <div className="portal-dim" style={{ marginTop: 4 }}>Selected: {file.name}</div>}
+      {error && <div className="portal-error">{error}</div>}
+    </div>
+  )
+}
 
 function ApplyForm({ user, onApplied }) {
   const [subjects, setSubjects] = useState('')
@@ -16,26 +46,37 @@ function ApplyForm({ user, onApplied }) {
   const [qualifications, setQualifications] = useState('')
   const [college, setCollege] = useState('')
   const [experienceLevel, setExperienceLevel] = useState(EXPERIENCE_LEVELS[0])
+  const [yearOfStudy, setYearOfStudy] = useState(YEARS_OF_STUDY[0])
   const [aadharNumber, setAadharNumber] = useState('')
   const [panNumber, setPanNumber] = useState('')
   const [hourlyRate, setHourlyRate] = useState('')
+  const [aadharFile, setAadharFile] = useState(null)
+  const [panFile, setPanFile] = useState(null)
+  const [collegeProofFile, setCollegeProofFile] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [progress, setProgress] = useState('') // shown while uploading docs after profile is created
   const [error, setError] = useState('')
+
+  const isStudying = experienceLevel === 'Currently studying (not yet graduated)'
+  const college_ = collegeContext(experienceLevel)
 
   async function submit(e) {
     e.preventDefault()
     setError('')
     const subjectList = subjects.split(',').map(s => s.trim()).filter(Boolean)
     if (subjectList.length === 0) return setError('Add at least one subject (comma separated).')
-    if (!college.trim()) return setError('Enter your college / institution.')
+    if (!college.trim()) return setError(`Enter your ${college_.label.toLowerCase()}.`)
     const aadharDigits = aadharNumber.replace(/\s/g, '')
     if (!/^\d{12}$/.test(aadharDigits)) return setError('Aadhar number must be exactly 12 digits.')
     const pan = panNumber.trim().toUpperCase()
     if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) return setError('PAN number format looks wrong — should be like ABCDE1234F.')
     if (!hourlyRate || Number(hourlyRate) <= 0) return setError('Enter a valid hourly rate.')
+    if (!aadharFile || !panFile || !collegeProofFile) return setError('Please upload all three documents — Aadhar photo, PAN photo, and your college/institute proof.')
+
     setSubmitting(true)
     try {
-      await applyAsTutor({
+      setProgress('Creating your application…')
+      const created = await applyAsTutor({
         user_id: user.id,
         name: user.name,
         email: user.email,
@@ -46,13 +87,24 @@ function ApplyForm({ user, onApplied }) {
         bio,
         qualifications,
         experience_level: experienceLevel,
+        year_of_study: isStudying ? yearOfStudy : '',
         hourly_rate: Number(hourlyRate),
       })
+      const teacherId = created.teacher_id
+
+      setProgress('Uploading Aadhar photo…')
+      await uploadTeacherDocument(teacherId, 'aadhar', user.id, aadharFile)
+      setProgress('Uploading PAN photo…')
+      await uploadTeacherDocument(teacherId, 'pan', user.id, panFile)
+      setProgress(`Uploading ${college_.proofLabel.split('(')[0].trim().toLowerCase()}…`)
+      await uploadTeacherDocument(teacherId, 'college_proof', user.id, collegeProofFile)
+
       onApplied()
     } catch (e) {
       setError(e.message || 'Could not submit your application')
     } finally {
       setSubmitting(false)
+      setProgress('')
     }
   }
 
@@ -63,9 +115,6 @@ function ApplyForm({ user, onApplied }) {
 
       <label className="portal-label">Subjects (comma separated)</label>
       <input className="portal-input" value={subjects} onChange={e => setSubjects(e.target.value)} placeholder="e.g. Calculus, Data Structures" />
-
-      <label className="portal-label">College / Institution (where you studied or currently study)</label>
-      <input className="portal-input" value={college} onChange={e => setCollege(e.target.value)} placeholder="e.g. IIT Delhi, or XYZ Engineering College" />
 
       <div className="portal-row-2">
         <div>
@@ -80,11 +129,23 @@ function ApplyForm({ user, onApplied }) {
         </div>
       </div>
 
+      {isStudying && (
+        <>
+          <label className="portal-label">Which year are you in?</label>
+          <select className="portal-input" value={yearOfStudy} onChange={e => setYearOfStudy(e.target.value)}>
+            {YEARS_OF_STUDY.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </>
+      )}
+
+      <label className="portal-label">{college_.label}</label>
+      <input className="portal-input" value={college} onChange={e => setCollege(e.target.value)} placeholder="e.g. IIT Delhi" />
+
       <label className="portal-label">Short bio</label>
       <textarea className="portal-input" rows={3} value={bio} onChange={e => setBio(e.target.value)} placeholder="What do you teach, and how?" />
 
       <div className="portal-verify-note">
-        🔒 The two fields below are for identity verification only — used solely by the GradeWallah admin to confirm you're a real person before approving your application. They're never shown to students or displayed anywhere on your public profile.
+        🔒 Everything below is for identity verification only — used solely by the GradeWallah admin to confirm you're a real person before approving your application. None of it is ever shown to students or displayed on your public profile.
       </div>
 
       <div className="portal-row-2">
@@ -106,9 +167,16 @@ function ApplyForm({ user, onApplied }) {
         </div>
       </div>
 
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 10 }}>
+        <FileField label="Photo of Aadhar card" file={aadharFile} onChange={setAadharFile} />
+        <FileField label="Photo of PAN card" file={panFile} onChange={setPanFile} />
+        <FileField label={college_.proofLabel} file={collegeProofFile} onChange={setCollegeProofFile} />
+      </div>
+
       <label className="portal-label">Hourly rate (₹)</label>
       <input className="portal-input" type="number" min="1" value={hourlyRate} onChange={e => setHourlyRate(e.target.value)} placeholder="e.g. 300" />
 
+      {progress && <div className="portal-dim" style={{ marginTop: 10 }}>{progress}</div>}
       {error && <div className="portal-error">{error}</div>}
       <button className="portal-btn-primary" type="submit" disabled={submitting} style={{ marginTop: 12 }}>
         {submitting ? 'Submitting…' : 'Submit application'}

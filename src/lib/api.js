@@ -46,3 +46,17 @@ export async function fetchTuitionJoinLink(bookingId, userId) {
   requireBackendUrl()
   return getJson(`${PYTHON_BACKEND_URL}/api/tuition/bookings/${bookingId}/join?user_id=${encodeURIComponent(userId)}`)
 }
+
+/** POST /api/tuition/tutors/{id}/documents?kind=&user_id= — uploads one KYC
+ * document photo (Aadhar / PAN / college proof) as multipart form data.
+ * kind must be 'aadhar', 'pan', or 'college_proof'. */
+export async function uploadTeacherDocument(teacherId, kind, userId, file) {
+  requireBackendUrl()
+  const form = new FormData()
+  form.append('file', file)
+  const url = `${PYTHON_BACKEND_URL}/api/tuition/tutors/${teacherId}/documents?kind=${encodeURIComponent(kind)}&user_id=${encodeURIComponent(userId)}`
+  const res = await fetch(url, { method: 'POST', body: form })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(json.error || `Upload failed (${res.status})`)
+  return json
+}
